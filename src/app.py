@@ -28,7 +28,7 @@ current_origin_frame = None
 
 # ---- Video Global Variables ----
 # current video file
-current_video_file = video_examples[0]
+current_video_file = None
 # item container
 item_container = SegmentItemContainer.instance()
 # ---- End ----
@@ -57,11 +57,11 @@ def add_mark(frame):
 def process_origin_image(img):
     global current_origin_frame
     current_origin_frame = ImageFrame(img, 0)
-    return [None, None, '前景']
+    return [None, None, 'foreground']
 
 
 def new_existing_items_dropdown(choices = []):
-    return gr.Dropdown(label = '选择物品', info = '输入新物品称名->回车加入新物品，或下拉选择物品', choices = choices, type = 'value', allow_custom_value=True)
+    return gr.Dropdown(label = 'Select item', info = 'Enter new item name -> Enter to add new item, or drop down to select item', choices = choices, type = 'value', allow_custom_value=True)
 
 
 with gr.Blocks() as demo:
@@ -70,26 +70,26 @@ with gr.Blocks() as demo:
             '''# Gradio-WebUI for Segment Anything Model 2 (SAM 2) 🚀'''
         )
     with gr.Row():
-        device = gr.Dropdown(choices = ['cuda', 'cpu'], type='value', value='cuda', label='选择设备', visible = False)
+        device = gr.Dropdown(choices = ['cuda', 'cpu'], type='value', value='cuda', label='Select Equipment', visible = False)
 
-    with gr.Tab(label='图像分割'):
+    with gr.Tab(label='Image Segmentation'):
     
         with gr.Row(equal_height=True):
             with gr.Column():
-                input_image = gr.Image(type="numpy", label='待分割图片', format='png', image_mode='RGB')
+                input_image = gr.Image(type="numpy", label='Picture to be segment', format='png', image_mode='RGB')
             with gr.Column():
-                with gr.Tab(label='叠加背景'):
+                with gr.Tab(label='Overlay'):
                     output_image = gr.Image(type='numpy', format='png', image_mode='RGB')
-                with gr.Tab(label='仅物品'):
+                with gr.Tab(label='Foreground only'):
                     output_mask = gr.Image(type='numpy', format='png', image_mode='RGBA')
         with gr.Row(equal_height = True):
             with gr.Column():
                 with gr.Row():
-                    gr.Markdown('选择样例图片或上传图片。')
-                    undo_point_btn = gr.Button('撤销标记点')
-                    remove_points_btn = gr.Button('清除标记点')
+                    gr.Markdown('Select a sample image or upload an image.')
+                    undo_point_btn = gr.Button('Undo Marker Points')
+                    remove_points_btn = gr.Button('Remove marker points')
                 
-                bg_radio = gr.Radio(['前景', '背景'], label='标记点类型')
+                bg_radio = gr.Radio(['foreground', 'background'], label='Object Type')
 
                 image_ex = gr.Examples(
                     examples=image_examples,
@@ -99,73 +99,74 @@ with gr.Blocks() as demo:
                     outputs=[output_image, output_mask, bg_radio],
                     run_on_click = True
                 )
-                image_commit_btn = gr.Button("物品分割")
+                image_commit_btn = gr.Button("Partitioning of objects")
             with gr.Column():
                 gr.Image(visible = False)
 
 
-    with gr.Tab(label='视频分割'):
+    with gr.Tab(label='Video Segmentation'):
         with gr.Row(equal_height=True):
             with gr.Column():
                 with gr.Row():
                     with gr.Column(variant = 'panel'):
-                        gr.Markdown('### 步骤1:&nbsp;&nbsp;选择/上传原始视频')
-                        input_video = gr.Video(label='原始视频', value=video_examples[0])
+                        gr.Markdown('### Step 1: Select/upload source video')
+                        input_video = gr.Video(label='Original video', value=current_video_file)
                         gr.Examples(
-                            label = '样例视频',
+                            label = 'Source Video',
                             examples=video_examples,
                             inputs=input_video,
                             examples_per_page=20,
                         )
                 with gr.Row():
                     with gr.Column(variant = 'panel'):
-                        gr.Markdown('### 步骤3:&nbsp;&nbsp;提交标记结果进行视频分割')
-                        output_video = gr.Video(format='mp4', label='输出视频', interactive=False)
-                        button_video = gr.Button(value = '视频分割')
+                        gr.Markdown('### Step 3: Submit labelling results for video segmentation')
+                        output_video = gr.Video(format='mp4', label='Output Video', interactive=False)
+                        button_video = gr.Button(value = 'Video Segmentation')
 
             with gr.Column():
-                gr.Markdown('### 步骤2:&nbsp;&nbsp;编辑分割物品')
+                gr.Markdown('### Step 2: Editing Segmentation Items')
                 with gr.Row():
                     with gr.Column(variant='panel'):
-                        maximum = count_video_frame_total(current_video_file)
-                        origin_frame = gr.Image(label='原始帧预览', type='numpy', interactive=False,value=get_video_frame(current_video_file, 0))
-                        origin_slider = gr.Slider(label='选择原视频帧', maximum = maximum, value = 0, step=1)
+                        maximum = count_video_frame_total(current_video_file) if current_video_file is not None else 0
+                        origin_frame = gr.Image(label='Preview', type='numpy', interactive=False,value=get_video_frame(current_video_file, 0) if current_video_file is not None else None)
+                        origin_slider = gr.Slider(label='Select video frame', maximum = maximum, value = 0, step=1)
 
                 with gr.Row():
                     with gr.Column(variant='panel'):
-                        gr.Markdown('拖动上方的滑块选择包含目标物品的原始帧，从“选择物品”下拉框中输入新物品或选择已有物品，点击“加入物品”加入到“物品帧预览”中。')
+                        gr.Markdown('Drag the upper slider to select the source frame containing the target item, create a new item or select an existing item from the ‘Select Item’ drop-down box, and click ‘Add Item’ to add it to the ‘Item Frame Preview')
                     with gr.Column(variant='panel'):
                         existing_items = new_existing_items_dropdown()
-                        existing_item_btn = gr.Button('加入物品')
+                        existing_item_btn = gr.Button('Add items')
 
                 with gr.Row(equal_height=True):
                     with gr.Column(variant='panel'):
 
                         with gr.Row(equal_height=True): 
                             with gr.Column(variant='panel'):
-                                item_frame_preview = gr.Image(label='物品帧预览', interactive = False, sources=[])
-                                origin_frame_preview = gr.Image(label='原始物品帧预览', interactive = False, sources=[], visible = False)
+                                item_frame_preview = gr.Image(label='Preview', interactive = False, sources=[])
+                                origin_frame_preview = gr.Image(label='Original preview', interactive = False, sources=[], visible = False)
                                 with gr.Row(equal_height=True):
-                                    item_frame_slider = gr.Slider(label='选择物品帧', scale=5)
-                                    item_origin_frame = gr.Number(label='原始帧序号', value=0, scale=1, min_width=10, interactive=False)
-                                video_mark_radio = gr.Radio(label='标记类型', choices = ['前景', '背景'], value=0, type='index', interactive=True)
+                                    video_mark_radio = gr.Radio(['foreground', 'background'], label='Marker type', value='foreground', type='index', interactive=True)
+                                with gr.Row(equal_height=True):
+                                    item_frame_slider = gr.Slider(label='Select item frame', scale=5)
+                                    item_origin_frame = gr.Number(label='Frame Number', value=0, scale=1, min_width=10, interactive=False)
                                 with gr.Row():
-                                    gr.Markdown('撤销最近添加的标记点')
-                                    undo_vedio_button = gr.Button(value='撤销标记')
+                                    gr.Markdown('Undo recently added marker points')
+                                    undo_vedio_button = gr.Button(value='Undo Marker')
 
                         with gr.Row(equal_height=True): 
                             with gr.Column(variant='panel'):
-                                item_seg_preview = gr.Image(label='物品分割预览', interactive = False)
+                                item_seg_preview = gr.Image(label='Item Split Preview', interactive = False)
                                 with gr.Row():
-                                    gr.Markdown('点击查看分割预览结果')
-                                    item_seg_btn = gr.Button(value='生成预览')
+                                    gr.Markdown('Click to view split preview results')
+                                    item_seg_btn = gr.Button(value='Generate Preview')
 
-                        with gr.Tab(label='当前物品'):
+                        with gr.Tab(label='current item'):
                             with gr.Row():
-                                item_id = gr.Number(label='物品ID', value=10, scale=1, min_width=10, interactive=False)
-                                item_name = gr.TextArea(label='物品名称', value='', lines=1, max_lines=1, scale=1, min_width=20, interactive=False)
+                                item_id = gr.Number(label='Item ID', value=10, scale=1, min_width=10, interactive=False)
+                                item_name = gr.TextArea(label='Name of item', value='', lines=1, max_lines=1, scale=1, min_width=20, interactive=False)
                             with gr.Row():
-                                item_delete_button = gr.Button('删除物品')
+                                item_delete_button = gr.Button('Deleting items')
 
                         with gr.Row(equal_height=True):
                             def update_current_item(it_id, it_name):
@@ -180,18 +181,18 @@ with gr.Blocks() as demo:
                                 if cur_frame and cur_frame.frame_data is not None:
                                     frame_data = cur_frame.frame_data.copy()
                                 if cur_frame:
-                                    frame_preview = gr.Image(label='物品帧预览', interactive = True, value=add_mark(cur_frame), sources=[])
+                                    frame_preview = gr.Image(label='Item frame preview', interactive = True, value=add_mark(cur_frame), sources=[])
                                 else:
-                                    frame_preview = gr.Image(label='物品帧预览', interactive = False)
+                                    frame_preview = gr.Image(label='Item frame preview', interactive = False)
                                     
                                 frame_slider = None
                                 if cur_item:
                                     maximum = len(cur_item) - 1
                                     if maximum == 0:
                                         maximum = 1
-                                    frame_slider = gr.Slider(value=cur_item.current_index, minimum = 0, maximum = maximum, label='选择物品帧', scale=5, interactive = True)
+                                    frame_slider = gr.Slider(value=cur_item.current_index, minimum = 0, maximum = maximum, label='Select item frame', scale=5, interactive = True)
                                 else:
-                                    frame_slider = gr.Slider(value=0, minimum = 0, maximum = 1, label='选择物品帧', scale=5, interactive = False)
+                                    frame_slider = gr.Slider(value=0, minimum = 0, maximum = 1, label='Select item frame', scale=5, interactive = False)
                                 origin_frame = 0
                                 if cur_frame:
                                     origin_frame = cur_frame.origin_index
@@ -207,7 +208,7 @@ with gr.Blocks() as demo:
                                 return [frame_preview, origin_frame_data, frame_slider, origin_frame, seg_preview, it_id, it_name]
                             all_preview_image_widgets = [item_frame_preview, origin_frame_preview, item_frame_slider, item_origin_frame, item_seg_preview, item_id, item_name]
                             all_items_ex = gr.Examples(
-                                label='选择标记物品',
+                                label='Selection of marked items',
                                 examples = [[-1, '']],
                                 inputs = [item_id, item_name],
                                 fn = update_current_item,
@@ -226,9 +227,9 @@ with gr.Blocks() as demo:
     def add_mark_point(point_type, event: gr.SelectData):
         global current_origin_frame
         label = 1
-        if point_type == '前景':
+        if point_type == 'foreground':
             label = 1
-        elif point_type == '背景':
+        elif point_type == 'background':
             label = 0
         
         if current_origin_frame is None:
@@ -254,7 +255,7 @@ with gr.Blocks() as demo:
         if current_origin_frame is None:
             return None
         current_origin_frame.clear()
-        return current_origin_frame.frame_data, '前景'
+        return current_origin_frame.frame_data, 'foreground'
 
     gr.Button.click(remove_points_btn, remove_all_points, inputs=None, outputs=[input_image, bg_radio])
 
@@ -262,7 +263,7 @@ with gr.Blocks() as demo:
     def do_image_interference(device):
         global current_origin_frame
         if current_origin_frame is None:
-            gr.Warning('请先选择图片', duration = 3)
+            gr.Warning('Please select the image first', duration = 3)
             return None, None
         points = []
         if current_origin_frame is not None:
@@ -283,7 +284,7 @@ with gr.Blocks() as demo:
             item_container.clear()
         current_video_file = path
         maximum = count_video_frame_total(current_video_file)
-        slider = gr.Slider(minimum=0, maximum=maximum, label='原视频帧预览', value=0, step=1, interactive=True)
+        slider = gr.Slider(minimum=0, maximum=maximum, label='Preview of the source frame', value=0, step=1, interactive=True)
         return get_video_frame(current_video_file, 0), slider, *update_all_preview_widgets(True)
 
 
@@ -304,7 +305,7 @@ with gr.Blocks() as demo:
             results = [item_names, gr.Dataset(samples = example_all_items)]
 
         if cur_item is None:
-            slider = gr.Slider(value=0, minimum = 0, maximum = 1, label='选择物品帧', scale=5, interactive = False)
+            slider = gr.Slider(value=0, minimum = 0, maximum = 1, label='Select item frame', scale=5, interactive = False)
             results.extend([None, None, slider, 0, None, 0, ''])
         else:
             results.extend(update_current_item(cur_item.item_id, cur_item.name))
@@ -313,7 +314,7 @@ with gr.Blocks() as demo:
 
     def attach_existing_item(item_name, frame_data, frame_index):
         if item_name is None:
-            gr.Warning(f'没有选中的物品, 请先添加物品并选择', duration = 3)
+            gr.Warning('There is no selected item, please add an item and select it first.', duration = 3)
             return update_all_preview_widgets(True) 
 
         item_container.select_by_item_name(item_name)
@@ -322,7 +323,7 @@ with gr.Blocks() as demo:
         if cur_item is not None:
             cur_item.add_frame(frame)
         else:
-            gr.Warning('当前没有选中的物品, 无法添加物品帧', duration = 3)
+            gr.Warning('There is no item currently selected, no item frame can be added.', duration = 3)
         return update_all_preview_widgets(True)
 
 
@@ -391,11 +392,11 @@ with gr.Blocks() as demo:
         global item_container
         cur_item = item_container.current_item()
         if not cur_item:
-            gr.Warning('没有选择物品, 请设置物品', duration = 3)
+            gr.Warning('No item selected, please set item', duration = 3)
             return None
         cur_frame = cur_item.current_frame()
         if not cur_frame:
-            gr.Warning('没有选择预览帧, 请选择预览帧', duration = 3)
+            gr.Warning('No preview frame selected, please select a preview frame', duration = 3)
             return None
         if cur_frame.preview_data:
             return cur_frame.preview_data
@@ -409,7 +410,7 @@ with gr.Blocks() as demo:
     
     def segment_video(video_path):
         global item_container
-        output_path = '..\output'
+        output_path = 'output'
         frames = []
         width = 0
         height = 0
@@ -468,4 +469,4 @@ with gr.Blocks() as demo:
 
 
 if __name__ == '__main__':
-    demo.queue().launch(debug=True, quiet=False)
+    demo.queue().launch(server_name="0.0.0.0", server_port=7860, debug=True, quiet=False)
