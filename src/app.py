@@ -479,7 +479,7 @@ with gr.Blocks() as demo:
     gr.Button.click(button_video, segment_video, input_video, output_video)
     
 
-    gr.Button.click(bgr_commit_btn, remove_background_execute, bgr_input_video, output_video)
+    gr.Button.click(bgr_commit_btn, remove_background_execute, bgr_input_video, bgr_output_video)
 
 
 if __name__ == '__main__':
