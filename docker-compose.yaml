@@ -1,8 +1,8 @@
 services:
   sam2-gradio:
-    build:
-     context: .
-    # image: "ghcr.io/michael-mueller-git/sam2-gradio:dev"
+    #build:
+    #   context: .
+    image: "ghcr.io/michael-mueller-git/sam2-gradio:latest"
     deploy:
       resources:
         reservations:
