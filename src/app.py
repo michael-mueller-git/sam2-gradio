@@ -6,6 +6,7 @@ import gradio as gr
 from image_segment import image_inference
 from video_segment import video_interfrence, InterferenceFrame
 from video_process import count_video_frame_total, get_video_frame, SegmentItemContainer, SegmentItem, ImageFrame
+from remove_video_background import remove_background_execute
 from glob import glob
 
 
@@ -33,6 +34,7 @@ current_video_file = None
 item_container = SegmentItemContainer.instance()
 # ---- End ----
 
+current_bgr_video_file = None
 
 def add_mark(frame):
     if frame is None:
@@ -71,9 +73,18 @@ with gr.Blocks() as demo:
         )
     with gr.Row():
         device = gr.Dropdown(choices = ['cuda', 'cpu'], type='value', value='cuda', label='Select Equipment', visible = False)
+    
+    with gr.Tab(label='Background Remove'):
+        with gr.Row(equal_height=True):
+            with gr.Column():
+                bgr_input_video = gr.Video(label='Source video', value=current_bgr_video_file)
+        with gr.Row():
+            bgr_commit_btn = gr.Button("Remove Background")
+        with gr.Row():
+            bgr_output_video = gr.Video(format='mp4', label='Output Video', interactive=False)
+
 
     with gr.Tab(label='Image Segmentation'):
-    
         with gr.Row(equal_height=True):
             with gr.Column():
                 input_image = gr.Image(type="numpy", label='Picture to be segment', format='png', image_mode='RGB')
@@ -110,7 +121,7 @@ with gr.Blocks() as demo:
                 with gr.Row():
                     with gr.Column(variant = 'panel'):
                         gr.Markdown('### Step 1: Select/upload source video')
-                        input_video = gr.Video(label='Original video', value=current_video_file)
+                        input_video = gr.Video(label='Source video', value=current_video_file)
                         gr.Examples(
                             label = 'Source Video',
                             examples=video_examples,
@@ -466,6 +477,9 @@ with gr.Blocks() as demo:
     gr.Button.click(undo_vedio_button, undo_video_points, item_frame_preview, item_frame_preview)
     gr.Button.click(item_seg_btn, run_sample_inference, inputs=[device], outputs=[item_seg_preview])
     gr.Button.click(button_video, segment_video, input_video, output_video)
+    
+
+    gr.Button.click(bgr_commit_btn, remove_background_execute, bgr_input_video, output_video)
 
 
 if __name__ == '__main__':

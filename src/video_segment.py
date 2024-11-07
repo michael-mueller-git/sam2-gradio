@@ -10,15 +10,15 @@ from PIL import Image, ImageDraw
 
 from sam2.build_sam import build_sam2_video_predictor
 
-if torch.cuda.get_device_properties(0).major >= 8:
-    # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-    torch.backends.cuda.matmul.allow_tf32 = True
-    torch.backends.cudnn.allow_tf32 = True
+if torch.cuda.is_available():
+    if torch.cuda.get_device_properties(0).major >= 8:
+        # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
 
 
 sam2_checkpoint = "checkpoints/sam2_hiera_large.pt"
 model_cfg = "sam2_hiera_l.yaml"
-video_predicator = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
 
 
 class InterferenceFrame:
@@ -64,6 +64,7 @@ def merge_video(result_dir, result_file):
 
 
 def video_interfrence(video_path, output_path, frames, width, height):
+    video_predicator = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
     # prepare pathes
     origin_path, mask_path, result_path, final_file = prepare_path(output_path)
     # extract frames from video
