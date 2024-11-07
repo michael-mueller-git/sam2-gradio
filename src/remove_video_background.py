@@ -62,7 +62,7 @@ def clean_hair_area(original, processed, mask, bg_color):
         processed[:, :, c] = processed[:, :, c] * (1 - alpha) + bg_color[c] * alpha
     return processed
 
-def remove_background_execute(input_video, output_path):
+def remove_background_execute(input_video):
     checkpoint = 'checkpoints/sam2_hiera_large.pt'
     model_cfg = 'sam2_hiera_l.yaml'
     predictor = build_sam2_video_predictor(model_cfg, checkpoint)
@@ -107,7 +107,7 @@ def remove_background_execute(input_video, output_path):
         output_frame_path = os.path.join(output_frames_dir, f"{out_frame_idx:05d}.jpg")
         cv2.imwrite(output_frame_path, frame_with_bg_removed)
         frame_count += 1
-    output_video_path = os.path.join(output_path, 'output.mp4')
+    output_video_path = 'bgr_output.mp4'
     final_video_cmd = [
         "ffmpeg", "-y",
         "-framerate", str(fps),

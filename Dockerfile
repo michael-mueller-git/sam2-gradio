@@ -17,6 +17,8 @@ RUN pip install git+https://github.com/facebookresearch/segment-anything-2
 # Download model
 RUN python -c "from torchvision.models.detection import fasterrcnn_resnet50_fpn; fasterrcnn_resnet50_fpn(pretrained=True)"
 
+RUN git clone https://github.com/facebookresearch/sam2.git && cd sam2 && pip install -e ".[notebooks]"
+
 RUN mkdir -p /app/images
 RUN mkdir -p /app/output
 
