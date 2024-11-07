@@ -14,6 +14,8 @@ COPY src/requirements.txt /app
 
 RUN pip install -r requirements.txt
 RUN pip install git+https://github.com/facebookresearch/segment-anything-2
+# Download model
+RUN python -c "from torchvision.models.detection import fasterrcnn_resnet50_fpn; fasterrcnn_resnet50_fpn(pretrained=True)"
 
 RUN mkdir -p /app/images
 RUN mkdir -p /app/output

@@ -8,7 +8,7 @@ import subprocess
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.transforms import functional as F
 
-def detect_body_keypoints(frame):
+def detect_body_keypoints(body_detector, frame):
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     img_tensor = F.to_tensor(frame_rgb).unsqueeze(0).to('cuda')
     with torch.no_grad():
@@ -86,7 +86,7 @@ def remove_background_execute(input_video, output_path):
     inference_state = predictor.init_state(video_path=frames_dir)
     first_frame_path = os.path.join(frames_dir, frame_names[0])
     first_frame = cv2.imread(first_frame_path)
-    keypoints = detect_body_keypoints(first_frame)
+    keypoints = detect_body_keypoints(body_detector, first_frame)
     _, out_obj_ids, out_mask_logits = predictor.add_new_points(inference_state=inference_state, frame_idx=0, obj_id=1, points=keypoints, labels=np.ones(len(keypoints), dtype=np.int32))
     video_segments = {}
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
